@@ -1,0 +1,31 @@
+[machine]
+entrypoint = "/usr/local/bin/python3 /mnt/app/app.py /dev/pmem2"
+ram_length = "64Mi"
+workdir = "/mnt/app"
+
+[drives.root]
+builder = "docker"
+dockerfile = "alpine.dockerfile"
+format = "ext2"
+target = "rootfs"
+extra_size = "16Mb"
+avoid_overwrite = "true"
+
+[drives.app]
+builder = "docker"
+dockerfile = "alpine.dockerfile"
+format = "sqfs"
+target = "app"
+build_args=["WALLET_APP_CONFIG=config.py"]
+
+[drives.state]
+builder = "docker"
+dockerfile = "alpine.dockerfile"
+target = "state"
+build_args=["WALLET_APP_CONFIG=config.py"]
+format = "none"
+output_type = "local"
+#buildx = true
+user = "dapp"
+mount = "false"
+avoid_overwrite = "true"

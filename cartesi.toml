@@ -1,0 +1,32 @@
+[machine]
+entrypoint = "/usr/local/bin/python3 /mnt/app/app.py /dev/pmem2"
+ram_length = "64Mi"
+workdir = "/mnt/app"
+
+[drives.root]
+builder = "docker"
+dockerfile = "sample_apps/wallet_app/alpine.dockerfile"
+format = "ext2"
+target = "rootfs"
+build_args = ["APP_DIR=sample_apps/wallet_app","INSTALL_STEP=build-local"]
+extra_size = "16Mb"
+avoid_overwrite = "true"
+
+[drives.app]
+builder = "docker"
+dockerfile = "sample_apps/wallet_app/alpine.dockerfile"
+format = "sqfs"
+target = "app"
+build_args = ["WALLET_APP_CONFIG=config.py","APP_DIR=sample_apps/wallet_app","INSTALL_STEP=build-local"]
+
+[drives.state]
+builder = "docker"
+dockerfile = "sample_apps/wallet_app/alpine.dockerfile"
+target = "state"
+build_args=["WALLET_APP_CONFIG=config.py","APP_DIR=sample_apps/wallet_app","INSTALL_STEP=build-local"]
+format = "none"
+output_type = "local"
+#buildx = true
+user = "dapp"
+mount = "false"
+avoid_overwrite = "true"

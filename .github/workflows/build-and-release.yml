@@ -1,0 +1,110 @@
+name: build-and-release
+run-name: Testing and Releasing pycma
+on: [push, workflow_dispatch]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    environment: Main
+
+    permissions:
+      packages: write
+      contents: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        images:
+          - image: ubuntu
+            plat: manylinux_2_39_riscv64
+          - image: alpine
+            plat: musllinux_1_2_riscv64
+
+    steps:
+      - name: Set Envs
+        run: |
+          echo "VERSION=0.0.0-dev" >> "$GITHUB_ENV"
+          cat "$GITHUB_ENV"
+        if: "!startsWith(github.ref, 'refs/tags/')"
+
+      - name: Set Envs
+        run: |
+          echo "VERSION=${GITHUB_REF##*/v}" >> "$GITHUB_ENV"
+          cat "$GITHUB_ENV"
+        if: "startsWith(github.ref, 'refs/tags/')"
+
+      - uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Create virtual environment and install test suite
+        run: |
+          python3 -m venv .venv
+          . .venv/bin/activate
+          pip install --upgrade pip
+          pip install "cartesapp[dev]@git+https://github.com/prototyp3-dev/cartesapp@v1.2.6"
+
+      - name: Verify cartesapp CLI
+        run: |
+          . .venv/bin/activate
+          cartesapp --help
+
+      - name: Run tests
+        run: |
+          . .venv/bin/activate
+          cartesapp test --cartesi-machine --config-file "./cartesi.toml" --log-level debug \
+            --drive-config "root.dockerfile=sample_apps/wallet_app/${{ matrix.images.image }}.dockerfile" \
+            --drive-config "app.dockerfile=sample_apps/wallet_app/${{ matrix.images.image }}.dockerfile" \
+            --drive-config "state.dockerfile=sample_apps/wallet_app/${{ matrix.images.image }}.dockerfile" \
+            sample_apps/tests/ledger/
+
+      - name: Build Wheels
+        run: |
+          docker build --platform=linux/riscv64 --build-arg PLAT=${{ matrix.images.plat }} -t ${{ matrix.images.image }}-builder -f ${{ matrix.images.image }}.dockerfile .
+          docker run --rm --platform=linux/riscv64 -e VERSION=${{ env.VERSION }} -v $PWD:/mnt/build -w /mnt/build ${{ matrix.images.image }}-builder /mnt/build/build_wheels.sh
+          mkdir -p ${{ runner.temp }}/artifacts/${{ matrix.images.image }}/
+          find wheelhouse/ -name "*${{ matrix.images.plat }}.whl" -exec cp '{}' ${{ runner.temp }}/artifacts/${{ matrix.images.image }}/. \;
+
+      - name: Upload Wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: pycma-${{ matrix.images.plat }}
+          path: ${{ runner.temp }}/artifacts/${{ matrix.images.image }}/*
+          if-no-files-found: error
+          retention-days: 1
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Set Envs
+        run: |
+          echo "VERSION=${GITHUB_REF##*/v}" >> "$GITHUB_ENV"
+
+      - name: Setup
+        run: |
+          mkdir -p ${{ runner.temp }}/artifacts
+
+      - name: Download Wheels
+        uses: actions/download-artifact@v4
+        with:
+          path: ${{ runner.temp }}/artifacts
+          pattern: pycma-*
+          merge-multiple: true
+
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          prerelease: true
+          files: ${{ runner.temp }}/artifacts/*
+          fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

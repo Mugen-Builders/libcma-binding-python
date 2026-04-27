@@ -1,0 +1,9 @@
+*.cpp
+*.c
+.*
+!.gitignore
+!.github
+!.dockerignore
+__pycache__
+build
+wheelhouse

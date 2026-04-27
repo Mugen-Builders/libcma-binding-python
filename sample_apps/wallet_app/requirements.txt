@@ -1,0 +1,3 @@
+--find-links https://prototyp3-dev.github.io/pip-wheels-riscv/wheels/
+pycmt >= 0.0.1
+pycma >= 0.0.1

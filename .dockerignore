@@ -1,0 +1,7 @@
+.*
+*.dockerfile
+*.cpp
+*.c
+tests
+cartesi.toml
+__pycache__
