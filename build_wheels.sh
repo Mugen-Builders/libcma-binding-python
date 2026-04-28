@@ -14,7 +14,7 @@ function repair_wheel {
 
 # Compile wheels
 for PYBIN in /opt/python/*/bin; do
-    "${PYBIN}/pip3" wheel $project_path --no-deps -w wheelhouse/
+    "${PYBIN}/pip3" wheel $project_path --no-deps -w wheelhouse/ --find-links https://prototyp3-dev.github.io/pip-wheels-riscv/wheels/
 done
 
 # Bundle external shared libraries into the wheels
