@@ -304,10 +304,6 @@ if __name__ == "__main__":
 
     mem_file = sys.argv[1]
     create_file = False
-    if len(sys.argv) > 2:
-        create_file = True
-        with open(mem_file, "wb") as f:
-            f.truncate(LEDGER_OFFSET + MEMORY_SIZE)
 
     rollup = RollupCma()
     ledger = Ledger(
@@ -316,14 +312,10 @@ if __name__ == "__main__":
         mem_length = MEMORY_SIZE,
         n_accounts = MAX_ACCOUNTS,
         n_assets = MAX_ASSETS,
-        n_balances = MAX_BALANCES,
-        initialize_memory = create_file
+        n_balances = MAX_BALANCES
     )
-    if create_file:
-        asset_info = ledger.retrieve_asset(base_token = True)
-        exit(0)
 
-    asset_info = ledger.retrieve_asset(base_token = True, force_find = True)
+    asset_info = ledger.retrieve_asset(base_token = True)
     EtherId.set(asset_info['asset_id'])
 
     accept_previous_request = True

@@ -1,12 +1,12 @@
 # syntax=docker.io/docker/dockerfile:1
-ARG APT_UPDATE_SNAPSHOT=20260113T030400Z
+ARG APT_UPDATE_SNAPSHOT=20260623T000000Z
 ARG MACHINE_GUEST_TOOLS_VERSION=0.17.2
-ARG MACHINE_GUEST_TOOLS_SHA256SUM=c077573dbcf0cdc146adf14b480bfe454ca63aa4d3e8408c5487f550a5b77a41
+ARG MACHINE_GUEST_TOOLS_SHA=sha256:4cabfd5cfd932367a5be35fa6c18a541f9044f04c48ffcb38bea3cebf88cc6a7
 ARG MACHINE_ASSET_TOOLS_VERSION=0.1.0-alpha.8
-ARG MACHINE_ASSET_TOOLS_TAR=https://github.com/Mugen-Builders/machine-asset-tools/releases/download/v${MACHINE_ASSET_TOOLS_VERSION}/machine-asset-tools_glibc_riscv64_v${MACHINE_ASSET_TOOLS_VERSION}.tar.gz
-ARG MACHINE_ASSET_TOOLS_TAR_CHECKSUM=sha256:639fc0915b5551eab8c2e91b3216e248cd94e546eca9dd50ba230a431e9c4e85
+# ARG MACHINE_ASSET_TOOLS_TAR=https://github.com/Mugen-Builders/machine-asset-tools/releases/download/v${MACHINE_ASSET_TOOLS_VERSION}/machine-asset-tools_glibc_riscv64_v${MACHINE_ASSET_TOOLS_VERSION}.tar.gz
+# ARG MACHINE_ASSET_TOOLS_TAR_CHECKSUM=sha256:f8ef6e1ca785c30059e58d18a5a93df2098f9d73de4b4489f477475c74f96029
 ARG MACHINE_ASSET_TOOLS_DEV_TAR=https://github.com/Mugen-Builders/machine-asset-tools/releases/download/v${MACHINE_ASSET_TOOLS_VERSION}/machine-asset-tools_glibc_riscv64_dev_v${MACHINE_ASSET_TOOLS_VERSION}.tar.gz
-ARG MACHINE_ASSET_TOOLS_DEV_TAR_CHECKSUM=sha256:8b3d55ceb148bd843e1210c3be5545fb0e9074fd5b02ecc32cf8bbddc32790f5
+ARG MACHINE_ASSET_TOOLS_DEV_TAR_CHECKSUM=sha256:5a1f3730add17ee29298cc7dfa81362bba6c0adef0581c130ed6427e40d8ed4d
 
 ARG APP_DIR=.
 ARG WALLET_APP_CONFIG=config.py
@@ -30,20 +30,9 @@ EOF
 
 # Install guest tools
 ARG MACHINE_GUEST_TOOLS_VERSION
-ARG MACHINE_GUEST_TOOLS_SHA256SUM
-ADD --checksum=sha256:${MACHINE_GUEST_TOOLS_SHA256SUM} \
-    https://github.com/cartesi/machine-guest-tools/releases/download/v${MACHINE_GUEST_TOOLS_VERSION}/machine-guest-tools_riscv64.deb \
-    /tmp/machine-guest-tools_riscv64.deb
-
-ARG DEBIAN_FRONTEND=noninteractive
-RUN <<EOF
-set -e
-apt-get install -y --no-install-recommends \
-  busybox-static \
-  /tmp/machine-guest-tools_riscv64.deb
-
-rm /tmp/machine-guest-tools_riscv64.deb
-EOF
+ADD https://github.com/cartesi/machine-guest-tools/releases/download/v${MACHINE_GUEST_TOOLS_VERSION}/machine-guest-tools_riscv64.deb /tmp/
+RUN apt-get install -y --no-install-recommends /tmp/machine-guest-tools_riscv64.deb
+RUN rm /tmp/machine-guest-tools_riscv64.deb
 
 # ARG MACHINE_ASSET_TOOLS_TAR
 # ARG MACHINE_ASSET_TOOLS_TAR_CHECKSUM
@@ -77,11 +66,26 @@ EOF
 
 FROM base AS builder
 
+# Install g++ 14
+RUN DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    g++-14 build-essential
+
 RUN <<EOF
 set -e
-apt-get install -y --no-install-recommends \
-    build-essential gcc libc6-dev
+apt-get remove -y g++-13
+update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-14 100
+update-alternatives --config g++
 EOF
+
+# Install guest tools
+ARG MACHINE_GUEST_TOOLS_VERSION
+ARG MACHINE_GUEST_TOOLS_SHA
+ADD --checksum=${MACHINE_GUEST_TOOLS_SHA} \
+    https://github.com/cartesi/machine-guest-tools/releases/download/v${MACHINE_GUEST_TOOLS_VERSION}/machine-guest-tools_riscv64.tar.gz \
+    /tmp/machine-guest-tools_riscv64.tar.gz
+
+ARG DEBIAN_FRONTEND=noninteractive
+RUN tar zxvf /tmp/machine-guest-tools_riscv64.tar.gz -C /
 
 ARG MACHINE_ASSET_TOOLS_DEV_TAR
 ARG MACHINE_ASSET_TOOLS_DEV_TAR_CHECKSUM
@@ -157,8 +161,6 @@ find /usr/local/lib -type d -name __pycache__ -exec rm -r {} +
 find . -type d -name __pycache__ -exec rm -r {} +
 rm -rf /var/lib/apt/lists/* /var/log/* /var/cache/* /tmp/* /opt/install
 EOF
-### Rootfs
-FROM ${INSTALL_STEP} AS rootfs
 
 ### Rootfs
 FROM ${INSTALL_STEP} AS rootfs
@@ -169,21 +171,6 @@ ARG APP_DIR
 ARG WALLET_APP_CONFIG
 COPY ${APP_DIR}/app.py .
 COPY ${APP_DIR}/${WALLET_APP_CONFIG} .
-
-### State
-FROM --platform=linux/riscv64 rootfs AS state-builder
-
-COPY --from=app-scratch / /opt/cartesi/app
-
-WORKDIR /opt/cartesi/app/data
-
-ARG STATE_FILESIZE
-
-RUN /usr/local/bin/python3 /opt/cartesi/app/app.py /opt/cartesi/app/data/state.bin 1
-
-FROM --platform=linux/riscv64 scratch AS state
-
-COPY --from=state-builder /opt/cartesi/app/data/state.bin /
 
 ### App
 FROM --platform=linux/riscv64 app-scratch AS app

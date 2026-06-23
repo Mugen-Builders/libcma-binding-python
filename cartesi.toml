@@ -20,13 +20,9 @@ target = "app"
 build_args = ["WALLET_APP_CONFIG=config.py","APP_DIR=sample_apps/wallet_app","INSTALL_STEP=build-local"]
 
 [drives.state]
-builder = "docker"
-dockerfile = "sample_apps/wallet_app/alpine.dockerfile"
-target = "state"
-build_args=["WALLET_APP_CONFIG=config.py","APP_DIR=sample_apps/wallet_app","INSTALL_STEP=build-local"]
-format = "none"
-output_type = "local"
-#buildx = true
-user = "dapp"
+builder = "empty"
+size = "64Mb"
+mke2fs = "false"
 mount = "false"
-avoid_overwrite = "true"
+format = "raw"
+user = "dapp"
