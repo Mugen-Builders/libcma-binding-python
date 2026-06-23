@@ -410,24 +410,37 @@ cdef class Ledger:
     cdef libcma.cma_ledger_t _c_ledger[1]
 
     def __cinit__(self, str memory_filename = None, int offset = 0, int mem_length = 0,
-            int n_accounts = 0, int n_assets = 0, int n_balances = 0, bint initialize_memory = 0):
+            int n_accounts = 0, int n_assets = 0, int n_balances = 0,
+            bint single_asset_account_drive = 0, str account_drive_token = None):
         cdef char *c_memory_filename
+        cdef libcma.cma_ledger_asset_type_t asset_type[1]
+        cdef libcma.cma_token_address_t ltok[1]
+        cdef libcma.cma_token_address_t *ltok_ptr = NULL
         if memory_filename is not None:
             if mem_length == 0 or n_accounts == 0 or n_assets == 0 or n_balances == 0:
                 raise Exception("Memory should be initialized with non zero values")
 
             b_memory_filename = memory_filename.encode('UTF-8')
             c_memory_filename = b_memory_filename
-            if initialize_memory:
-                err = libcma.cma_ledger_init_file(self._c_ledger, c_memory_filename, libcma.CMA_LEDGER_CREATE_ONLY,
-                    offset, mem_length, n_accounts, n_assets, n_balances);
+            if single_asset_account_drive:
+                asset_type[0] = libcma.CMA_LEDGER_ASSET_TYPE_BASE
+                if account_drive_token is not None:
+                    if account_drive_token.startswith("0x"):
+                        account_drive_token = account_drive_token[2:]
+                    if len(account_drive_token) != 2*libcmt.CMT_ABI_ADDRESS_LENGTH:
+                        raise Exception("Invalid account_drive_token")
+                    asset_type[0] = libcma.CMA_LEDGER_ASSET_TYPE_TOKEN_ADDRESS
+                    ltok[0].data = bytes.fromhex(account_drive_token[:(2*libcmt.CMT_ABI_ADDRESS_LENGTH)])[:libcmt.CMT_ABI_ADDRESS_LENGTH]
+                    ltok_ptr = ltok
+                err = libcma.cma_ledger_init_single_file(self._c_ledger, c_memory_filename,
+                    offset, mem_length, n_accounts, asset_type[0], ltok_ptr);
                 if err != 0:
-                    raise Exception(f"Failed to create ledger file ({err} - {libcma.cma_ledger_get_last_error_message()})")
+                    raise Exception(f"Failed to initialize ledger file single ({err} - {libcma.cma_ledger_get_last_error_message()})")
             else:
-                err = libcma.cma_ledger_init_file(self._c_ledger, c_memory_filename, libcma.CMA_LEDGER_OPEN_ONLY,
+                err = libcma.cma_ledger_init_file(self._c_ledger, c_memory_filename,
                     offset, mem_length, n_accounts, n_assets, n_balances);
                 if err != 0:
-                    raise Exception(f"Failed to open ledger 'open' ({err} - {libcma.cma_ledger_get_last_error_message()})")
+                    raise Exception(f"Failed to initialize ledger file ({err} - {libcma.cma_ledger_get_last_error_message()})")
         else:
             err = libcma.cma_ledger_init(self._c_ledger)
             if err != 0:
@@ -443,7 +456,7 @@ cdef class Ledger:
         if err != 0:
             raise Exception(f"Failed to reset ledger ({err} - {libcma.cma_ledger_get_last_error_message()})")
 
-    def retrieve_asset(self, asset_id = None, token = None, token_id = None, token_id_with_amount = None, base_token = None, force_find = None):
+    def retrieve_asset(self, asset_id = None, token = None, token_id = None, token_id_with_amount = None, base_token = None, force_find = None, remove = None):
         cdef libcma.cma_ledger_asset_id_t lassid[1]
         cdef libcma.cma_token_address_t ltok[1]
         cdef libcma.cma_token_id_t ltokid[1]
@@ -470,6 +483,8 @@ cdef class Ledger:
             operation = libcma.CMA_LEDGER_OP_CREATE
         if force_find is not None and force_find:
             operation = libcma.CMA_LEDGER_OP_FIND
+        if remove is not None and remove:
+            operation = libcma.CMA_LEDGER_OP_FIND_AND_REMOVE
         err = libcma.cma_ledger_retrieve_asset(self._c_ledger, lassid, ltok, ltokid, ltotal_supply, asset_type, operation)
         if err != 0:
             raise Exception(f"Failed to retrieve asset ({err} - {libcma.cma_ledger_get_last_error_message()})")
@@ -488,7 +503,7 @@ cdef class Ledger:
             "total_supply": int.from_bytes(ltotal_supply[0].data[:libcmt.CMT_ABI_U256_LENGTH])
         }
 
-    def retrieve_account(self, account_id = None, account = None):
+    def retrieve_account(self, account_id = None, account = None, remove = None):
         cdef libcma.cma_ledger_account_id_t laccid[1]
         cdef libcma.cma_ledger_account_t lacc[1]
         cdef libcma.cma_ledger_account_type_t account_type[1]
@@ -510,7 +525,10 @@ cdef class Ledger:
         else:
             account_type[0] = libcma.CMA_LEDGER_ACCOUNT_TYPE_ID
             operation = libcma.CMA_LEDGER_OP_CREATE
-        err = libcma.cma_ledger_retrieve_account(self._c_ledger, laccid, lacc, NULL, NULL, account_type, operation)
+        if remove is not None and remove:
+            operation = libcma.CMA_LEDGER_OP_FIND_AND_REMOVE
+        cdef size_t n_balances[1]
+        err = libcma.cma_ledger_retrieve_account(self._c_ledger, laccid, lacc, NULL, n_balances, account_type, operation)
         if err != 0:
             raise Exception(f"Failed to retrieve account ({err} - {libcma.cma_ledger_get_last_error_message()})")
         account_str = None
@@ -520,7 +538,8 @@ cdef class Ledger:
             account_str = "0x" + lacc[0].account_id.data[:libcmt.CMT_ABI_U256_LENGTH].hex()
         return {
             "account_id": laccid[0],
-            "account": account_str
+            "account": account_str,
+            "n_balances": n_balances[0],
         }
 
     cpdef deposit(self, libcma.cma_ledger_asset_id_t asset_id, libcma.cma_ledger_account_id_t account_id, object amount):

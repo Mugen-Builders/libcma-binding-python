@@ -1,21 +1,18 @@
 # syntax=docker.io/docker/dockerfile:1
 ARG PLAT=musllinux_1_2_riscv64
 ARG IMAGE=quay.io/pypa/${PLAT}:2026.02.01-1
-ARG MACHINE_GUEST_TOOLS_VERSION=0.17.1-r1
-ARG MACHINE_ASSET_TOOLS_VERSION=0.1.0-alpha.7
+ARG MACHINE_GUEST_TOOLS_VERSION=0.17.2-r1
+ARG MACHINE_ASSET_TOOLS_VERSION=0.1.0-alpha.8
 ARG MACHINE_ASSET_TOOLS_DEV_TAR=https://github.com/Mugen-Builders/machine-asset-tools/releases/download/v${MACHINE_ASSET_TOOLS_VERSION}/machine-asset-tools_musl_riscv64_dev_v${MACHINE_ASSET_TOOLS_VERSION}.tar.gz
-ARG MACHINE_ASSET_TOOLS_DEV_TAR_CHECKSUM=sha256:63a7de3880e5695f86c6598bc53e4ee4924902436f90252d78b7798a5501ded5
+ARG MACHINE_ASSET_TOOLS_DEV_TAR_CHECKSUM=sha256:77af16a6fd7ba8fe0454701105a51dee5ce6f198036b6c0b8e7184982f9c0e06
 
 FROM --platform=linux/riscv64 ${IMAGE} AS base
 
 # Install guest tools
 ARG MACHINE_GUEST_TOOLS_VERSION
-ADD --chmod=644 https://edubart.github.io/linux-packages/apk/keys/cartesi-apk-key.rsa.pub /etc/apk/keys/cartesi-apk-key.rsa.pub
-RUN echo "https://edubart.github.io/linux-packages/apk/stable" >> /etc/apk/repositories
-RUN apk update && \
-    apk add cartesi-machine-guest-tools=${MACHINE_GUEST_TOOLS_VERSION} \
-    cartesi-machine-guest-libcmt-dev=${MACHINE_GUEST_TOOLS_VERSION} \
-    build-base=0.5-r3
+ADD --chmod=644 https://cartesi.github.io/linux-packages/apk/keys/cartesi-apk-key.rsa.pub /etc/apk/keys/cartesi-apk-key.rsa.pub
+RUN echo "https://cartesi.github.io/linux-packages/apk/stable" >> /etc/apk/repositories
+RUN apk update && apk add cartesi-machine-guest-tools=${MACHINE_GUEST_TOOLS_VERSION}
 
 ARG MACHINE_ASSET_TOOLS_DEV_TAR
 ARG MACHINE_ASSET_TOOLS_DEV_TAR_CHECKSUM

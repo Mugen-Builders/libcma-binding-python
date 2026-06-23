@@ -2,7 +2,7 @@
 ARG APT_UPDATE_SNAPSHOT=20260113T030400Z
 ARG MACHINE_GUEST_TOOLS_VERSION=0.17.1-r1
 ARG MACHINE_GUEST_TOOLS_SHA256SUM=c077573dbcf0cdc146adf14b480bfe454ca63aa4d3e8408c5487f550a5b77a41
-ARG MACHINE_ASSET_TOOLS_VERSION=0.1.0-alpha.7
+ARG MACHINE_ASSET_TOOLS_VERSION=0.1.0-alpha.8
 ARG MACHINE_ASSET_TOOLS_TAR=https://github.com/Mugen-Builders/machine-asset-tools/releases/download/v${MACHINE_ASSET_TOOLS_VERSION}/machine-asset-tools_musl_riscv64_v${MACHINE_ASSET_TOOLS_VERSION}.tar.gz
 ARG MACHINE_ASSET_TOOLS_TAR_CHECKSUM=sha256:8c8b228c07fa822e63743c58307e28fe84adcfaff75663b6d341a44e6f797e54
 ARG MACHINE_ASSET_TOOLS_DEV_TAR=https://github.com/Mugen-Builders/machine-asset-tools/releases/download/v${MACHINE_ASSET_TOOLS_VERSION}/machine-asset-tools_musl_riscv64_dev_v${MACHINE_ASSET_TOOLS_VERSION}.tar.gz
@@ -156,7 +156,6 @@ COPY --from=app-scratch / /opt/cartesi/app
 WORKDIR /opt/cartesi/app/data
 
 ARG STATE_FILESIZE
-RUN dd if=/dev/zero of=/opt/cartesi/app/data/state.bin count=1 bs=1 seek=$((${STATE_FILESIZE} - 1))
 
 RUN /usr/local/bin/python3 /opt/cartesi/app/app.py /opt/cartesi/app/data/state.bin 1
 

@@ -28,6 +28,19 @@ class EtherId:
     def get(cls):
         return cls.ether_id
 
+def check_remove_account(ledger, account_id):
+    account_info = ledger.retrieve_account(account_id=account_id)
+    if account_info["n_balances"] == 0:
+        account_info = ledger.retrieve_account(account_id=account_id,remove=True)
+
+def check_remove_asset(ledger, asset_id):
+    if asset_id == EtherId.get():
+        return
+    account_info = ledger.retrieve_asset(asset_id=asset_id)
+    if account_info["total_supply"] == 0:
+        account_info = ledger.retrieve_asset(asset_id=asset_id,remove=True)
+
+
 def handle_advance(rollup, ledger):
     advance = rollup.read_advance_state()
     msg_sender = advance['msg_sender'].hex().lower()
@@ -92,6 +105,9 @@ def handle_advance(rollup, ledger):
             ledger.withdraw(EtherId.get(), account_info['account_id'], decoded_advance['amount'])
             logger.info(f"[app] {msg_sender} withdrew {decoded_advance['amount']} ethers")
 
+            # remove empty accounts
+            check_remove_account(ledger, account_info['account_id'])
+
             rollup.emit_ether_voucher(msg_sender, decoded_advance['amount'])
             logger.info("[app] Ether voucher emitted")
             return True
@@ -102,6 +118,10 @@ def handle_advance(rollup, ledger):
 
             ledger.withdraw(asset_info['asset_id'], account_info['account_id'], decoded_advance['amount'])
             logger.info(f"[app] {msg_sender} withdrew {decoded_advance['amount']} of token {asset_info['token']}")
+
+            # remove empty accounts and assets
+            check_remove_account(ledger, account_info['account_id'])
+            check_remove_asset(ledger, asset_info['asset_id'])
 
             rollup.emit_erc20_voucher(asset_info['token'], msg_sender, decoded_advance['amount'])
             logger.info("[app] Erc20 voucher emitted")
@@ -114,6 +134,10 @@ def handle_advance(rollup, ledger):
             ledger.withdraw(asset_info['asset_id'], account_info['account_id'], 1)
             logger.info(f"[app] {msg_sender} withdrew id {decoded_advance['token_id']} from token {asset_info['token']}")
 
+            # remove empty accounts and assets
+            check_remove_account(ledger, account_info['account_id'])
+            check_remove_asset(ledger, asset_info['asset_id'])
+
             rollup.emit_erc721_voucher(asset_info['token'], msg_sender, decoded_advance['token_id'])
             logger.info("[app] Erc721 voucher emitted")
             return True
@@ -125,9 +149,10 @@ def handle_advance(rollup, ledger):
             ledger.withdraw(asset_info['asset_id'], account_info['account_id'], decoded_advance['amount'])
             logger.info(f"[app] {msg_sender} withdrew {decoded_advance['amount']} of id {decoded_advance['token_id']} from token {asset_info['token']}")
 
-            logger.info(f"[app] {asset_info=}")
-            logger.info(f"[app] {msg_sender=}")
-            logger.info(f"[app] {decoded_advance=}")
+            # remove empty accounts and assets
+            check_remove_account(ledger, account_info['account_id'])
+            check_remove_asset(ledger, asset_info['asset_id'])
+
             rollup.emit_erc1155_single_voucher(asset_info['token'], msg_sender, decoded_advance['token_id'], decoded_advance['amount'])
             logger.info("[app] Erc1155_single voucher emitted")
             return True
@@ -140,6 +165,12 @@ def handle_advance(rollup, ledger):
                 ledger.withdraw(asset_info['asset_id'], account_info['account_id'], decoded_advance['amounts'][i])
                 logger.info(f"[app] {msg_sender} withdrew {decoded_advance['amounts'][i]} of id {decoded_advance['token_ids'][i]} from token {asset_info['token']}")
 
+                # remove empty assets
+                check_remove_asset(ledger, asset_info['asset_id'])
+
+            # remove empty accounts
+            check_remove_account(ledger, account_info['account_id'])
+
             rollup.emit_erc1155_batch_voucher(decoded_advance['token'], msg_sender, decoded_advance['token_ids'], decoded_advance['amounts'])
             logger.info("[app] Erc1155_batch voucher emitted")
             return True
@@ -149,6 +180,10 @@ def handle_advance(rollup, ledger):
             account_info_to = ledger.retrieve_account(account=decoded_advance['receiver'])
 
             ledger.transfer(EtherId.get(), account_info_from['account_id'], account_info_to['account_id'], decoded_advance['amount'])
+
+            # remove empty accounts
+            check_remove_account(ledger, account_info_from['account_id'])
+
             logger.info(f"[app] {msg_sender} transfered to {account_info_to['account']} {decoded_advance['amount']} ethers")
             return True
 
@@ -158,6 +193,10 @@ def handle_advance(rollup, ledger):
             account_info_to = ledger.retrieve_account(account=decoded_advance['receiver'])
 
             ledger.transfer(asset_info['asset_id'], account_info_from['account_id'], account_info_to['account_id'], decoded_advance['amount'])
+
+            # remove empty accounts
+            check_remove_account(ledger, account_info_from['account_id'])
+
             logger.info(f"[app] {msg_sender} transfered to {account_info_to['account']} {decoded_advance['amount']} of token {asset_info['token']}")
             return True
 
@@ -167,6 +206,10 @@ def handle_advance(rollup, ledger):
             account_info_to = ledger.retrieve_account(account=decoded_advance['receiver'])
 
             ledger.transfer(asset_info['asset_id'], account_info_from['account_id'], account_info_to['account_id'], 1)
+
+            # remove empty accounts
+            check_remove_account(ledger, account_info_from['account_id'])
+
             logger.info(f"[app] {msg_sender} transfered to {account_info_to['account']} id {decoded_advance['token_id']} from token {asset_info['token']}")
             return True
 
@@ -176,6 +219,10 @@ def handle_advance(rollup, ledger):
             account_info_to = ledger.retrieve_account(account=decoded_advance['receiver'])
 
             ledger.transfer(asset_info['asset_id'], account_info_from['account_id'], account_info_to['account_id'], decoded_advance['amount'])
+
+            # remove empty accounts
+            check_remove_account(ledger, account_info_from['account_id'])
+
             logger.info(f"[app] {msg_sender} transfered to {account_info_to['account']} {decoded_advance['amount']} of id {decoded_advance['token_id']} from token {asset_info['token']}")
             return True
 
@@ -188,6 +235,10 @@ def handle_advance(rollup, ledger):
 
                 ledger.transfer(asset_info['asset_id'], account_info_from['account_id'], account_info_to['account_id'], decoded_advance['amounts'][i])
                 logger.info(f"[app] {msg_sender} transfered to {account_info_to['account']} {decoded_advance['amounts'][i]} of id {decoded_advance['token_ids'][i]} from token {asset_info['token']}")
+
+            # remove empty accounts
+            check_remove_account(ledger, account_info_from['account_id'])
+
             return True
 
         logger.info("[app] unidentified wallet input")
@@ -250,13 +301,17 @@ handlers = {
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         raise Exception("Missing memory filename")
+
+    mem_file = sys.argv[1]
     create_file = False
     if len(sys.argv) > 2:
         create_file = True
+        with open(mem_file, "wb") as f:
+            f.truncate(LEDGER_OFFSET + MEMORY_SIZE)
 
     rollup = RollupCma()
     ledger = Ledger(
-        memory_filename = sys.argv[1],
+        memory_filename = mem_file,
         offset = LEDGER_OFFSET,
         mem_length = MEMORY_SIZE,
         n_accounts = MAX_ACCOUNTS,

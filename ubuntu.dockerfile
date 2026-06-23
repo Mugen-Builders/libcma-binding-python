@@ -2,17 +2,17 @@
 ARG PLAT=manylinux_2_39_riscv64
 ARG IMAGE=quay.io/pypa/${PLAT}:2026.02.01-1
 ARG MACHINE_GUEST_TOOLS_VERSION=0.17.2
-ARG MACHINE_GUEST_TOOLS_SHA=4cabfd5cfd932367a5be35fa6c18a541f9044f04c48ffcb38bea3cebf88cc6a7
-ARG MACHINE_ASSET_TOOLS_VERSION=0.1.0-alpha.7
+ARG MACHINE_GUEST_TOOLS_SHA=sha256:4cabfd5cfd932367a5be35fa6c18a541f9044f04c48ffcb38bea3cebf88cc6a7
+ARG MACHINE_ASSET_TOOLS_VERSION=0.1.0-alpha.8
 ARG MACHINE_ASSET_TOOLS_DEV_TAR=https://github.com/Mugen-Builders/machine-asset-tools/releases/download/v${MACHINE_ASSET_TOOLS_VERSION}/machine-asset-tools_glibc_riscv64_dev_v${MACHINE_ASSET_TOOLS_VERSION}.tar.gz
-ARG MACHINE_ASSET_TOOLS_DEV_TAR_CHECKSUM=sha256:8b3d55ceb148bd843e1210c3be5545fb0e9074fd5b02ecc32cf8bbddc32790f5
+ARG MACHINE_ASSET_TOOLS_DEV_TAR_CHECKSUM=sha256:5a1f3730add17ee29298cc7dfa81362bba6c0adef0581c130ed6427e40d8ed4d
 
 FROM --platform=linux/riscv64 ${IMAGE} AS base
 
 # Install guest tools
 ARG MACHINE_GUEST_TOOLS_VERSION
 ARG MACHINE_GUEST_TOOLS_SHA
-ADD --checksum=sha256:${MACHINE_GUEST_TOOLS_SHA} \
+ADD --checksum=${MACHINE_GUEST_TOOLS_SHA} \
     https://github.com/cartesi/machine-guest-tools/releases/download/v${MACHINE_GUEST_TOOLS_VERSION}/machine-guest-tools_riscv64.tar.gz \
     /tmp/machine-guest-tools_riscv64.tar.gz
 

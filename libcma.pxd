@@ -231,9 +231,6 @@ cdef extern from "/usr/include/libcma/ledger.h":
         CMA_LEDGER_ACCOUNT_TYPE_ID,
         CMA_LEDGER_ACCOUNT_TYPE_WALLET_ADDRESS,
         CMA_LEDGER_ACCOUNT_TYPE_ACCOUNT_ID,
-    ctypedef enum cma_ledger_memory_mode_t:
-        CMA_LEDGER_OPEN_ONLY,
-        CMA_LEDGER_CREATE_ONLY,
 
     ctypedef struct cma_ledger_t:
         pass
@@ -256,8 +253,12 @@ cdef extern from "/usr/include/libcma/ledger.h":
         cma_ledger_account_balance_t *balance
 
     int cma_ledger_init(cma_ledger_t *ledger)
-    int cma_ledger_init_file(cma_ledger_t *ledger, char *memory_file_name, cma_ledger_memory_mode_t mode,
+    int cma_ledger_init_file(cma_ledger_t *ledger, char *memory_file_name,
         size_t offset, size_t mem_length, size_t n_accounts, size_t n_assets, size_t n_balances);
+
+    int cma_ledger_init_single_file(cma_ledger_t *ledger, const char *memory_file_name, size_t offset,
+        size_t mem_length, size_t n_accounts, cma_ledger_asset_type_t asset_type,
+        const cma_token_address_t *token_address);
 
     int cma_ledger_fini(cma_ledger_t *ledger)
     int cma_ledger_reset(cma_ledger_t *ledger)
