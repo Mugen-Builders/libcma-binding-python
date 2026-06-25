@@ -12,7 +12,7 @@ FROM --platform=linux/riscv64 ${IMAGE} AS base
 ARG MACHINE_GUEST_TOOLS_VERSION
 ADD --chmod=644 https://cartesi.github.io/linux-packages/apk/keys/cartesi-apk-key.rsa.pub /etc/apk/keys/cartesi-apk-key.rsa.pub
 RUN echo "https://cartesi.github.io/linux-packages/apk/stable" >> /etc/apk/repositories
-RUN apk update && apk add cartesi-machine-guest-tools=${MACHINE_GUEST_TOOLS_VERSION}
+RUN apk update && apk add cartesi-machine-guest-tools=${MACHINE_GUEST_TOOLS_VERSION} cartesi-machine-guest-libcmt-dev=${MACHINE_GUEST_TOOLS_VERSION}
 
 ARG MACHINE_ASSET_TOOLS_DEV_TAR
 ARG MACHINE_ASSET_TOOLS_DEV_TAR_CHECKSUM
