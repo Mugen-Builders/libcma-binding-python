@@ -1,12 +1,11 @@
 # syntax=docker.io/docker/dockerfile:1
 ARG APT_UPDATE_SNAPSHOT=20260113T030400Z
-ARG MACHINE_GUEST_TOOLS_VERSION=0.17.2-r1
-ARG MACHINE_GUEST_TOOLS_SHA256SUM=c077573dbcf0cdc146adf14b480bfe454ca63aa4d3e8408c5487f550a5b77a41
-ARG MACHINE_ASSET_TOOLS_VERSION=0.1.0-alpha.8
+ARG MACHINE_GUEST_TOOLS_VERSION=0.18.0-r1
+ARG MACHINE_ASSET_TOOLS_VERSION=0.1.0-alpha.10
 # ARG MACHINE_ASSET_TOOLS_TAR=https://github.com/Mugen-Builders/machine-asset-tools/releases/download/v${MACHINE_ASSET_TOOLS_VERSION}/machine-asset-tools_musl_riscv64_v${MACHINE_ASSET_TOOLS_VERSION}.tar.gz
 # ARG MACHINE_ASSET_TOOLS_TAR_CHECKSUM=sha256:b1f124b29d560dc7e489af97f1d992596e936aff1550e7735672e0be79879253
 ARG MACHINE_ASSET_TOOLS_DEV_TAR=https://github.com/Mugen-Builders/machine-asset-tools/releases/download/v${MACHINE_ASSET_TOOLS_VERSION}/machine-asset-tools_musl_riscv64_dev_v${MACHINE_ASSET_TOOLS_VERSION}.tar.gz
-ARG MACHINE_ASSET_TOOLS_DEV_TAR_CHECKSUM=sha256:77af16a6fd7ba8fe0454701105a51dee5ce6f198036b6c0b8e7184982f9c0e06
+ARG MACHINE_ASSET_TOOLS_DEV_TAR_CHECKSUM=sha256:e596b1125dd08304eeec4aba162ff846f4f9a36a85cf5cc8089193789418c53a
 
 ARG APP_DIR=.
 ARG WALLET_APP_CONFIG=config.py
@@ -53,7 +52,7 @@ find . -type d -name __pycache__ -exec rm -r {} +
 rm -rf /var/lib/apt/lists/* /var/log/* /var/cache/* /tmp/* /opt/install
 EOF
 
-FROM base AS builder
+FROM base AS builder-env
 
 ARG MACHINE_GUEST_TOOLS_VERSION
 RUN <<EOF
@@ -72,6 +71,8 @@ set -e
 tar -xzf /tmp/cma.tar.gz -C /
 rm /tmp/cma.tar.gz
 EOF
+
+FROM builder-env AS builder
 
 # ARG CMAPY_PROJECT=.
 ADD setup.py /opt/build/.

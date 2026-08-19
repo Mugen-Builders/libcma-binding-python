@@ -2,8 +2,8 @@ from libc.stdint cimport uint64_t, uint32_t, uint16_t, uint8_t
 
 cdef extern from "/usr/include/libcmt/io.h":
     cdef enum:
-        HTIF_YIELD_REASON_ADVANCE
-        HTIF_YIELD_REASON_INSPECT
+        HTIF_YIELD_REASON_ADVANCE_STATE
+        HTIF_YIELD_REASON_INSPECT_STATE
 
 cdef extern from "/usr/include/libcmt/abi.h":
     cdef enum:
@@ -34,6 +34,7 @@ cdef extern from "/usr/include/libcmt/rollup.h":
     ctypedef struct cmt_rollup_finish_t:
         bint accept_previous_request
         int next_request_type
+        uint32_t next_request_payload_length
     ctypedef struct cmt_gio_t:
         uint16_t domain
         uint32_t id_length

@@ -1,5 +1,5 @@
 [machine]
-entrypoint = "/usr/local/bin/python3 /mnt/app/app.py /dev/pmem2"
+entrypoint = "/usr/local/bin/python3 /mnt/app/app.py /dev/uio0"
 ram_length = "64Mi"
 workdir = "/mnt/app"
 
@@ -18,10 +18,7 @@ format = "sqfs"
 target = "app"
 build_args=["WALLET_APP_CONFIG=config.py"]
 
-[drives.state]
-builder = "empty"
-size = "64Mb"
-mke2fs = "false"
-mount = "false"
-format = "raw"
+[nvrams.state]
+builder = "raw"
+length = "64Mb"
 user = "dapp"

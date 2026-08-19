@@ -1,12 +1,12 @@
 # syntax=docker.io/docker/dockerfile:1
 ARG APT_UPDATE_SNAPSHOT=20260623T000000Z
-ARG MACHINE_GUEST_TOOLS_VERSION=0.17.2
-ARG MACHINE_GUEST_TOOLS_SHA=sha256:4cabfd5cfd932367a5be35fa6c18a541f9044f04c48ffcb38bea3cebf88cc6a7
-ARG MACHINE_ASSET_TOOLS_VERSION=0.1.0-alpha.8
+ARG MACHINE_GUEST_TOOLS_VERSION=0.18.0
+ARG MACHINE_GUEST_TOOLS_SHA=sha256:fec7fad82c21e5831f2f6871686f776b0e4981af9131dcb9620f2607a0084405
+ARG MACHINE_ASSET_TOOLS_VERSION=0.1.0-alpha.10
 # ARG MACHINE_ASSET_TOOLS_TAR=https://github.com/Mugen-Builders/machine-asset-tools/releases/download/v${MACHINE_ASSET_TOOLS_VERSION}/machine-asset-tools_glibc_riscv64_v${MACHINE_ASSET_TOOLS_VERSION}.tar.gz
 # ARG MACHINE_ASSET_TOOLS_TAR_CHECKSUM=sha256:f8ef6e1ca785c30059e58d18a5a93df2098f9d73de4b4489f477475c74f96029
 ARG MACHINE_ASSET_TOOLS_DEV_TAR=https://github.com/Mugen-Builders/machine-asset-tools/releases/download/v${MACHINE_ASSET_TOOLS_VERSION}/machine-asset-tools_glibc_riscv64_dev_v${MACHINE_ASSET_TOOLS_VERSION}.tar.gz
-ARG MACHINE_ASSET_TOOLS_DEV_TAR_CHECKSUM=sha256:5a1f3730add17ee29298cc7dfa81362bba6c0adef0581c130ed6427e40d8ed4d
+ARG MACHINE_ASSET_TOOLS_DEV_TAR_CHECKSUM=sha256:1b8aadca40286d7a10429f0a682547af8157b0e634b1134cebfdf14d3e3faed7
 
 ARG APP_DIR=.
 ARG WALLET_APP_CONFIG=config.py
@@ -64,7 +64,7 @@ find . -type d -name __pycache__ -exec rm -r {} +
 rm -rf /var/lib/apt/lists/* /var/log/* /var/cache/* /tmp/* /opt/install
 EOF
 
-FROM base AS builder
+FROM base AS builder-env
 
 # Install g++ 14
 RUN DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
@@ -95,6 +95,8 @@ set -e
 tar -xzf /tmp/cma.tar.gz -C /
 rm /tmp/cma.tar.gz
 EOF
+
+FROM builder-env AS builder
 
 # ARG CMAPY_PROJECT=.
 ADD setup.py /opt/build/.

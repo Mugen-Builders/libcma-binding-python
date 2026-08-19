@@ -18,6 +18,6 @@ setup(
     setup_requires=[
         'setuptools>=75.0.0',
         'cython>=3.2.2',
-        'pycmt>=0.0.1',
+        'pycmt>=0.0.2',
     ],
 )
