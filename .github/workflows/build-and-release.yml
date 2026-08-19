@@ -93,6 +93,7 @@ jobs:
         run: |
           . .venv/bin/activate
           cartesapp test --cartesi-machine --config-file "./cartesi.toml" --log-level debug \
+            --machine-config "ram_image=${{ runner.temp }}/linux.bin" \
             --drive-config "root.dockerfile=sample_apps/wallet_app/${{ matrix.images.image }}.dockerfile" \
             --drive-config "app.dockerfile=sample_apps/wallet_app/${{ matrix.images.image }}.dockerfile" \
             sample_apps/tests/ledger/
